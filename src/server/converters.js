@@ -241,10 +241,22 @@ function runFfmpeg(inputPath, outputPath, args, timeoutMs, onProgress) {
 // Public API
 // ---------------------------------------------------------------------------
 
+// Conversions to keep out of the UI. Keyed by input extension; the listed
+// targets are removed from what targetsFor() returns. Every offered pair was
+// verified end to end (2026-09-01) so this is currently empty — add an entry
+// here to hide a pair without touching the registries.
+//   e.g.  wmv: ["mp3"]   to hide "WMV -> MP3"
+const HIDDEN_TARGETS = {};
+
 // Which target formats can this filename convert to?
 function targetsFor(filename) {
 	const { kind, ext } = inputKindOf(filename);
+	const raw = rawTargetsFor(kind, ext);
+	const hidden = HIDDEN_TARGETS[ext] || [];
+	return { kind: raw.kind, targets: raw.targets.filter((t) => !hidden.includes(t)) };
+}
 
+function rawTargetsFor(kind, ext) {
 	if (kind === "image") {
 		const targets = IMAGE_ORDER.filter((t) => t !== normalizeImage(ext));
 		// A GIF can also be turned into a video.
@@ -280,6 +292,11 @@ function targetsFor(filename) {
 async function convert({ inputPath, filename, format, onProgress = () => {} }) {
 	const target = String(format || "").toLowerCase();
 	const { kind, ext: inputExt } = inputKindOf(filename);
+
+	// Reject pairs hidden from the UI even if requested directly.
+	if ((HIDDEN_TARGETS[inputExt] || []).includes(target)) {
+		throw new ConversionError(`Converting ${inputExt} to ${target} isn't supported`);
+	}
 
 	if (kind === "archive") {
 		const spec = ARCHIVE_TARGETS[target];
