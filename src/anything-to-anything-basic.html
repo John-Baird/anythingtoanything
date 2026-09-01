@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Anything to Anything</title>
+
+  <style>
+    /* ================================================================
+       ORIGINAL COLOR PALETTE
+       These are the same colors used in the original design.
+       ================================================================ */
+    :root {
+      --page-background: #fdfcfa;
+      --accent-red: #e0202a;
+      --accent-red-dark: #b81a22;
+      --dark: #111;
+      --white: #fff;
+      --card-background: rgba(255, 255, 255, .95);
+    }
+
+    /* ================================================================
+       BASIC PAGE STYLES
+       Change colors, sizes, and spacing here.
+       ================================================================ */
+
+    /* This applies to every element on the page. */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* The page background and the font are set here. */
+    body {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--page-background);
+      color: var(--dark);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    /* The full page, including the left text and right converter card. */
+    .page {
+      position: relative;
+      min-height: 100vh;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--page-background);
+
+      /* The faint square grid in the background. */
+      background-image:
+        linear-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px);
+      background-size: 44px 44px;
+    }
+
+    /* Decorative red shape on the right side of the page. */
+    .red-shape {
+      position: absolute;
+      top: -25%;
+      right: -30%;
+      z-index: 0;
+      width: 75%;
+      height: 170%;
+      background: var(--accent-red);
+      opacity: 0.95;
+      transform: rotate(18deg);
+    }
+
+    /* Decorative black strip next to the red shape. */
+    .black-shape {
+      position: absolute;
+      top: -25%;
+      right: -42%;
+      z-index: 0;
+      width: 26%;
+      height: 170%;
+      background: var(--dark);
+      transform: rotate(18deg);
+    }
+
+    /* The row containing the left text and the right card. */
+    .content {
+      position: relative;
+      z-index: 2;
+      width: min(1100px, 92vw);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 60px;
+      flex-wrap: wrap;
+      padding: 40px 0;
+    }
+
+    /* ================================================================
+       LEFT SIDE: INTRODUCTION
+       ================================================================ */
+
+    .intro {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .eyebrow {
+      margin-bottom: 18px;
+      color: var(--accent-red);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 4px;
+    }
+
+    .main-title {
+      margin: 0;
+      color: var(--dark);
+      font-size: clamp(48px, 8vw, 104px);
+      font-weight: 800;
+      line-height: 0.92;
+      letter-spacing: -2px;
+    }
+
+    .red-line {
+      width: 120px;
+      height: 6px;
+      margin-top: 26px;
+      background: var(--accent-red);
+    }
+
+    .description {
+      max-width: 360px;
+      margin-top: 22px;
+      color: rgba(0, 0, 0, 0.55);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    /* ================================================================
+       RIGHT SIDE: CONVERTER CARD
+       ================================================================ */
+
+    .converter-card {
+      flex: none;
+      position: relative;
+      width: 380px;
+      overflow: hidden;
+      border: 2px solid var(--dark);
+      background: var(--card-background);
+    }
+
+    .card-content {
+      padding: 30px 26px 26px;
+    }
+
+    .card-heading {
+      margin-bottom: 18px;
+      color: rgba(0, 0, 0, 0.5);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    /* The real file input is hidden. The dashed box opens it instead. */
+    .hidden-file-input {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+    }
+
+    .upload-button {
+      width: 100%;
+      padding: 34px 16px;
+      border: 2px dashed rgba(0, 0, 0, 0.4);
+      background: none;
+      color: var(--dark);
+      font-family: inherit;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .upload-button:hover,
+    .upload-button.dragging {
+      border-color: var(--accent-red);
+      background: rgba(224, 32, 42, 0.06);
+    }
+
+    .upload-title {
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .upload-subtitle {
+      margin-top: 6px;
+      color: rgba(0, 0, 0, 0.45);
+      font-size: 12px;
+    }
+
+    /* A selected file appears in this outlined box. */
+    .selected-file {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 14px;
+      border: 2px solid var(--dark);
+      color: var(--dark);
+      font-size: 13px;
+    }
+
+    .file-name {
+      max-width: 230px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .remove-file {
+      padding: 2px;
+      border: none;
+      background: none;
+      color: rgba(0, 0, 0, 0.45);
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .remove-file:hover {
+      color: var(--accent-red);
+    }
+
+    .format-label {
+      margin-top: 18px;
+      color: rgba(0, 0, 0, 0.5);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* The eight format buttons are in four columns. */
+    .format-buttons {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .format-button {
+      padding: 9px 0;
+      border: 2px solid rgba(0, 0, 0, 0.35);
+      background: transparent;
+      color: var(--dark);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .format-button:hover,
+    .format-button.selected {
+      border-color: var(--accent-red);
+      background: var(--accent-red);
+      color: var(--white);
+    }
+
+    .convert-button,
+    .download-button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .convert-button {
+      margin-top: 18px;
+      background: var(--dark);
+      color: var(--white);
+    }
+
+    .convert-button:hover {
+      background: var(--accent-red);
+    }
+
+    .convert-button:disabled {
+      background: rgba(0, 0, 0, 0.12);
+      color: rgba(0, 0, 0, 0.4);
+      cursor: not-allowed;
+    }
+
+    .download-button {
+      background: var(--accent-red);
+      color: var(--white);
+    }
+
+    .download-button:hover {
+      background: var(--accent-red-dark);
+    }
+
+    .reset-button {
+      display: block;
+      width: 100%;
+      margin-top: 12px;
+      padding: 0;
+      border: none;
+      background: none;
+      color: rgba(0, 0, 0, 0.5);
+      font-family: inherit;
+      font-size: 12px;
+      text-align: center;
+      text-decoration: underline;
+      cursor: pointer;
+    }
+
+    .reset-button:hover {
+      color: var(--accent-red);
+    }
+
+    /* Text used by the selected, converting, and finished states. */
+    .status-text {
+      margin-bottom: 16px;
+      color: var(--dark);
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .progress-bar {
+      height: 14px;
+      border: 2px solid var(--dark);
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .progress-fill {
+      width: 0%;
+      height: 100%;
+      background: var(--accent-red);
+      transition: width 0.15s linear;
+    }
+
+    .progress-label {
+      margin-top: 8px;
+      color: rgba(0, 0, 0, 0.5);
+      font-size: 12px;
+    }
+
+    /* These sections are shown one at a time by JavaScript. */
+    .hidden {
+      display: none;
+    }
+
+    /* On a smaller screen, stack the left and right sides neatly. */
+    @media (max-width: 700px) {
+      .content {
+        gap: 36px;
+      }
+
+      .converter-card {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Everything inside this element makes up the visible page. -->
+  <main class="page">
+    <!-- Decorative shapes on the right side. -->
+    <div class="red-shape"></div>
+    <div class="black-shape"></div>
+
+    <!-- This row contains the left introduction and the right converter card. -->
+    <div class="content">
+      <!-- ============================================================
+           LEFT SIDE: change the words and title in this section.
+           ============================================================ -->
+      <section class="intro">
+        <p class="eyebrow">FILE CONVERSION UTILITY</p>
+
+        <h1 class="main-title">ANYTHING<br>TO<br>ANYTHING</h1>
+
+        <div class="red-line"></div>
+
+        <p class="description">
+          Drop a file, pick where it's going, and convert it. No install, no signup.
+        </p>
+      </section>
+
+      <!-- ============================================================
+           RIGHT SIDE: the file converter card.
+           ============================================================ -->
+      <section class="converter-card">
+        <div class="card-content">
+          <h2 class="card-heading">Convert a file</h2>
+
+          <!-- This input lets the visitor choose a file from their computer. -->
+          <input id="file-input" class="hidden-file-input" type="file">
+
+          <!-- STATE 1: shown before a file is selected. -->
+          <div id="idle-section">
+            <button id="upload-button" class="upload-button" type="button">
+              <div class="upload-title">Drop a file here</div>
+              <div class="upload-subtitle">or click to browse</div>
+            </button>
+          </div>
+
+          <!-- STATE 2: shown after a file is selected. -->
+          <div id="selected-section" class="hidden">
+            <div class="selected-file">
+              <span id="file-name" class="file-name"></span>
+              <button id="remove-file" class="remove-file" type="button" aria-label="Remove file">✕</button>
+            </div>
+
+            <div class="format-label">convert to</div>
+
+            <div class="format-buttons" role="radiogroup" aria-label="Choose a file format">
+              <!-- Add, remove, or rename format buttons here. -->
+              <button class="format-button" type="button" data-format="PDF">PDF</button>
+              <button class="format-button" type="button" data-format="JPG">JPG</button>
+              <button class="format-button" type="button" data-format="PNG">PNG</button>
+              <button class="format-button" type="button" data-format="DOCX">DOCX</button>
+              <button class="format-button" type="button" data-format="MP3">MP3</button>
+              <button class="format-button" type="button" data-format="MP4">MP4</button>
+              <button class="format-button" type="button" data-format="ZIP">ZIP</button>
+              <button class="format-button" type="button" data-format="CSV">CSV</button>
+            </div>
+
+            <button id="convert-button" class="convert-button" type="button" disabled>
+              Convert →
+            </button>
+          </div>
+
+          <!-- STATE 3: shown while the pretend conversion is running. -->
+          <div id="converting-section" class="hidden">
+            <div class="status-text">Converting to <span id="converting-format"></span>…</div>
+
+            <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+              <div id="progress-fill" class="progress-fill"></div>
+            </div>
+
+            <div id="progress-label" class="progress-label">0%</div>
+          </div>
+
+          <!-- STATE 4: shown when the pretend conversion is finished. -->
+          <div id="done-section" class="hidden">
+            <div class="status-text">✔ <span id="output-name"></span> is ready</div>
+
+            <button id="download-button" class="download-button" type="button">
+              Download ↓
+            </button>
+
+            <button id="reset-button" class="reset-button" type="button">
+              convert another file
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    /* ================================================================
+       BASIC PAGE FUNCTIONALITY
+       This controls choosing a file, choosing a format, and the buttons.
+       ================================================================ */
+
+    // Find the HTML elements we need to control.
+    const fileInput = document.getElementById("file-input");
+    const uploadButton = document.getElementById("upload-button");
+    const removeFileButton = document.getElementById("remove-file");
+    const convertButton = document.getElementById("convert-button");
+    const downloadButton = document.getElementById("download-button");
+    const resetButton = document.getElementById("reset-button");
+    const formatButtons = document.querySelectorAll(".format-button");
+
+    // Find the four sections that are shown at different points in the process.
+    const idleSection = document.getElementById("idle-section");
+    const selectedSection = document.getElementById("selected-section");
+    const convertingSection = document.getElementById("converting-section");
+    const doneSection = document.getElementById("done-section");
+
+    // Find the text and progress elements that need to change.
+    const fileNameText = document.getElementById("file-name");
+    const convertingFormatText = document.getElementById("converting-format");
+    const progressFill = document.getElementById("progress-fill");
+    const progressLabel = document.getElementById("progress-label");
+    const outputNameText = document.getElementById("output-name");
+
+    // These variables remember the current file and format.
+    let selectedFile = null;
+    let selectedFormat = null;
+    let progressTimer = null;
+
+    // Open the computer's file picker when the dashed upload area is clicked.
+    uploadButton.addEventListener("click", function () {
+      fileInput.click();
+    });
+
+    // React to a file chosen from the file picker.
+    fileInput.addEventListener("change", function () {
+      if (fileInput.files.length > 0) {
+        chooseFile(fileInput.files[0]);
+      }
+    });
+
+    // Allow a file to be dragged over the dashed upload area.
+    uploadButton.addEventListener("dragover", function (event) {
+      event.preventDefault();
+      uploadButton.classList.add("dragging");
+    });
+
+    uploadButton.addEventListener("dragleave", function () {
+      uploadButton.classList.remove("dragging");
+    });
+
+    // Read the file that was dropped.
+    uploadButton.addEventListener("drop", function (event) {
+      event.preventDefault();
+      uploadButton.classList.remove("dragging");
+
+      if (event.dataTransfer.files.length > 0) {
+        chooseFile(event.dataTransfer.files[0]);
+      }
+    });
+
+    // Save the chosen file and show the format choices.
+    function chooseFile(file) {
+      selectedFile = file;
+      selectedFormat = null;
+      fileNameText.textContent = file.name;
+      convertButton.disabled = true;
+
+      formatButtons.forEach(function (button) {
+        button.classList.remove("selected");
+      });
+
+      idleSection.classList.add("hidden");
+      selectedSection.classList.remove("hidden");
+    }
+
+    // Choose the format the file should be converted to.
+    formatButtons.forEach(function (button) {
+      button.addEventListener("click", function () {
+        selectedFormat = button.dataset.format;
+        convertButton.disabled = false;
+
+        formatButtons.forEach(function (otherButton) {
+          otherButton.classList.remove("selected");
+        });
+
+        button.classList.add("selected");
+      });
+    });
+
+    // Remove the selected file and return to the first state.
+    removeFileButton.addEventListener("click", resetPage);
+
+    // Start the visual conversion progress.
+    convertButton.addEventListener("click", function () {
+      if (!selectedFile || !selectedFormat) {
+        return;
+      }
+
+      convertingFormatText.textContent = selectedFormat;
+      idleSection.classList.add("hidden");
+      selectedSection.classList.add("hidden");
+      doneSection.classList.add("hidden");
+      convertingSection.classList.remove("hidden");
+
+      let progress = 0;
+      progressFill.style.width = "0%";
+      progressLabel.textContent = "0%";
+
+      progressTimer = setInterval(function () {
+        progress += 8 + Math.random() * 10;
+
+        if (progress >= 100) {
+          progress = 100;
+          clearInterval(progressTimer);
+          progressTimer = null;
+
+          setTimeout(function () {
+            showDoneState();
+          }, 300);
+        }
+
+        progressFill.style.width = Math.round(progress) + "%";
+        progressLabel.textContent = Math.round(progress) + "%";
+      }, 180);
+    });
+
+    // Show the finished message and create the output filename.
+    function showDoneState() {
+      const originalName = selectedFile.name.replace(/\.[^.]+$/, "");
+      const outputName = originalName + "." + selectedFormat.toLowerCase();
+
+      outputNameText.textContent = outputName;
+      convertingSection.classList.add("hidden");
+      doneSection.classList.remove("hidden");
+    }
+
+    // Download a small placeholder file, matching the original demo behavior.
+    downloadButton.addEventListener("click", function () {
+      const originalName = selectedFile.name.replace(/\.[^.]+$/, "");
+      const outputName = originalName + "." + selectedFormat.toLowerCase();
+      const fileContents = "Converted file: " + outputName;
+      const fileBlob = new Blob([fileContents], { type: "text/plain" });
+      const downloadUrl = URL.createObjectURL(fileBlob);
+      const link = document.createElement("a");
+
+      link.href = downloadUrl;
+      link.download = outputName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(downloadUrl);
+    });
+
+    // Return the converter to its starting state.
+    resetButton.addEventListener("click", resetPage);
+
+    function resetPage() {
+      if (progressTimer) {
+        clearInterval(progressTimer);
+        progressTimer = null;
+      }
+
+      selectedFile = null;
+      selectedFormat = null;
+      fileInput.value = "";
+
+      formatButtons.forEach(function (button) {
+        button.classList.remove("selected");
+      });
+
+      convertButton.disabled = true;
+      selectedSection.classList.add("hidden");
+      convertingSection.classList.add("hidden");
+      doneSection.classList.add("hidden");
+      idleSection.classList.remove("hidden");
+    }
+  </script>
+</body>
+</html>
