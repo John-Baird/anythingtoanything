@@ -1,32 +1,63 @@
 <div
   class="drop-zone"
+  [class.dragging]="isDragging()"
   (dragover)="onDragOver($event)"
   (dragleave)="onDragLeave($event)"
   (drop)="onDrop($event)"
-  [class.dragging]="isDragging"
   (click)="fileInput.click()"
 >
   <input #fileInput type="file" hidden (change)="onFileSelected($event)" />
 
   @if (!selectedFile) {
-    <p>Drag and drop a file here</p>
+    <p>Drop a file here</p>
     <span>or click to browse</span>
   } @else {
-    <p>{{ selectedFile.name }}</p>
+    <p class="file-name">{{ selectedFile.name }}</p>
     <span>{{ formatFileSize(selectedFile.size) }}</span>
   }
 </div>
 
-@if (selectedFile) {
-  <button type="button" (click)="upload()" [disabled]="status === 'uploading'">
-    {{ status === 'uploading' ? 'Uploading…' : 'Upload' }}
+@if (selectedFile && state() !== 'converting') {
+  <button type="button" class="remove-file" (click)="removeFile()">✕ remove file</button>
+}
+
+@if (errorMessage()) {
+  <p class="error">{{ errorMessage() }}</p>
+}
+
+@if (state() === 'selected') {
+  <div class="format-label">convert to</div>
+
+  <div class="format-buttons" role="radiogroup" aria-label="Choose a target format">
+    @for (format of targetFormats(); track format) {
+      <button
+        type="button"
+        class="format-button"
+        [class.selected]="selectedFormat() === format"
+        (click)="pickFormat(format)"
+      >
+        {{ format }}
+      </button>
+    }
+  </div>
+
+  <button
+    type="button"
+    class="convert-button"
+    [disabled]="!selectedFormat()"
+    (click)="convert()"
+  >
+    Convert →
   </button>
 }
 
-@if (status === 'done') {
-  <pre>{{ result | json }}</pre>
+@if (state() === 'converting') {
+  <p class="status-text">Converting to {{ selectedFormat() }}…</p>
 }
 
-@if (status === 'error') {
-  <pre class="error">{{ result | json }}</pre>
+@if (state() === 'done') {
+  <p class="status-text">✔ {{ outputName() }} is ready</p>
+
+  <button type="button" class="download-button" (click)="download()">Download ↓</button>
+  <button type="button" class="reset-button" (click)="reset()">convert another file</button>
 }

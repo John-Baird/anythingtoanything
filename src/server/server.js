@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const path = require("path");
 const multer = require("multer");
+const sharp = require("sharp");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,13 +23,76 @@ const browserDir = path.join(__dirname, "..", "..", "dist", "temp-angular", "bro
 
 app.use(express.static(browserDir));
 
-app.get("/api/test", (req, res) => {
-	res.json({
-		message: "Backend works",
-	});
+// ---------------------------------------------------------------------------
+// Image conversion (sharp)
+// ---------------------------------------------------------------------------
+
+// Extensions sharp can read.
+const IMAGE_INPUT_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif", "tiff", "tif", "avif", "svg"];
+
+// target key -> how to emit it
+const IMAGE_TARGETS = {
+	png: { sharp: "png", mime: "image/png", ext: "png" },
+	jpg: { sharp: "jpeg", mime: "image/jpeg", ext: "jpg" },
+	jpeg: { sharp: "jpeg", mime: "image/jpeg", ext: "jpg" },
+	webp: { sharp: "webp", mime: "image/webp", ext: "webp" },
+	avif: { sharp: "avif", mime: "image/avif", ext: "avif" },
+	gif: { sharp: "gif", mime: "image/gif", ext: "gif" },
+	tiff: { sharp: "tiff", mime: "image/tiff", ext: "tiff" },
+};
+
+function fileExtension(name) {
+	const match = String(name).toLowerCase().match(/\.([^.]+)$/);
+	return match ? match[1] : "";
+}
+
+// Tell the front end which target formats a given file can become.
+app.get("/api/formats", (req, res) => {
+	const ext = fileExtension(req.query.filename || "");
+
+	if (!IMAGE_INPUT_EXTENSIONS.includes(ext)) {
+		return res.json({ kind: "unsupported", targets: [] });
+	}
+
+	const current = ext === "jpeg" ? "jpg" : ext === "tif" ? "tiff" : ext;
+	const targets = ["png", "jpg", "webp", "avif", "gif", "tiff"].filter((t) => t !== current);
+
+	res.json({ kind: "image", targets });
 });
 
-// Accepts one file under the form field "file".
+// Convert the uploaded file to req.body.format and stream it back as a download.
+app.post("/api/convert", upload.single("file"), async (req, res, next) => {
+	try {
+		if (!req.file) {
+			return res.status(400).json({ error: "No file received" });
+		}
+
+		const target = String(req.body.format || "").toLowerCase();
+		const spec = IMAGE_TARGETS[target];
+
+		if (!spec) {
+			return res.status(400).json({ error: `Unsupported target format: ${target || "(none)"}` });
+		}
+
+		// Confirm sharp can actually read this file before converting.
+		try {
+			await sharp(req.file.buffer).metadata();
+		} catch {
+			return res.status(400).json({ error: "File is not a readable image" });
+		}
+
+		const output = await sharp(req.file.buffer).toFormat(spec.sharp).toBuffer();
+
+		const base = req.file.originalname.replace(/\.[^.]+$/, "") || "converted";
+		res.setHeader("Content-Type", spec.mime);
+		res.setHeader("Content-Disposition", `attachment; filename="${base}.${spec.ext}"`);
+		res.send(output);
+	} catch (err) {
+		next(err);
+	}
+});
+
+// Accepts one file under the form field "file". Kept for quick manual testing.
 app.post("/api/upload", upload.single("file"), (req, res) => {
 	if (!req.file) {
 		return res.status(400).json({ error: "No file received" });
@@ -46,7 +110,9 @@ app.use((err, req, res, next) => {
 	if (err instanceof multer.MulterError) {
 		return res.status(400).json({ error: err.code });
 	}
-	next(err);
+
+	console.error(err);
+	res.status(500).json({ error: "Server error" });
 });
 
 // SPA fallback: hand any non-API, non-file request to Angular's index.html.
