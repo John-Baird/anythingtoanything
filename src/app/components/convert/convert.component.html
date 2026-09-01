@@ -1,2 +1,18 @@
-<h3>CONVERT A FILE</h3>
-<div></div>
+<div
+  class="drop-zone"
+  (dragover)="onDragOver($event)"
+  (dragleave)="onDragLeave($event)"
+  (drop)="onDrop($event)"
+  [class.dragging]="isDragging"
+  (click)="fileInput.click()"
+>
+  <input #fileInput type="file" hidden (change)="onFileSelected($event)" />
+
+  @if (!selectedFile) {
+    <p>Drag and drop a file here</p>
+    <span>or click to browse</span>
+  } @else {
+    <p>{{ selectedFile.name }}</p>
+    <span>{{ formatFileSize(selectedFile.size) }}</span>
+  }
+</div>
