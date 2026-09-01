@@ -1,6 +1,7 @@
 @use '@angular/material' as mat;
 
 :host {
+  padding: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -27,18 +28,16 @@
     transform-origin: center;
     pointer-events: none;
   }
-
-  * {
-    z-index: 2;
-  }
 }
 
 section {
+  z-index: 2;
   display: flex;
-  flex-direction: column; // Media query to change this
+  flex-direction: row;
+  align-items: start;
+  justify-content: start;
   gap: 50px;
-  width: 100%;
-  max-width: 400px;
+  width: max-content;
 
   div {
     display: flex;
@@ -46,6 +45,8 @@ section {
     align-items: start;
     justify-content: start;
     gap: 25px;
+    max-width: 400px;
+    width: 100%;
 
     h2 {
       font-size: 14px;
@@ -74,5 +75,16 @@ section {
       font-weight: 300;
       color: var(--grey);
     }
+  }
+
+  app-convert-component {
+    max-width: 600px;
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  section {
+    flex-direction: column;
   }
 }
