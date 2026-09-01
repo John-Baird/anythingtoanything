@@ -76,7 +76,7 @@ export class ConvertComponent {
             this.targetFormats.set([]);
             this.state.set('idle');
             this.errorMessage.set(
-              'Only image files are supported right now (JPG, PNG, WebP, GIF, TIFF, AVIF, SVG).',
+              "That file type isn't supported yet. Try an image (JPG, PNG, WebP, GIF, TIFF, AVIF) or audio (MP3, WAV, FLAC, OGG, M4A).",
             );
             return;
           }
