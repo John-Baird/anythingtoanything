@@ -11,6 +11,12 @@
 }
 
 // --- CSS RESET ---
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html,
 body,
 div,
