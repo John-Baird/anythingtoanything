@@ -36,9 +36,16 @@
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "ffmpeg-static": "^5.3.0",
+    "html-to-docx": "^1.8.0",
+    "html-to-text": "^10.0.1",
+    "mammoth": "^1.12.1",
+    "marked": "^18.0.10",
     "multer": "^2.2.0",
     "node-unrar-js": "^2.0.2",
-    "sharp": "^0.35.3"
+    "pdf-parse": "^2.4.5",
+    "puppeteer": "^25.8.0",
+    "sharp": "^0.35.3",
+    "turndown": "^7.2.4"
   },
   "devDependencies": {
     "@angular/build": "^22.1.6"

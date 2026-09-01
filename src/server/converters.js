@@ -12,6 +12,13 @@ const {
 	normalizeArchive,
 	convertArchive,
 } = require("./archives");
+const {
+	DOC_INPUT_EXTENSIONS,
+	DOC_TARGETS,
+	DOC_ORDER,
+	normalizeDoc,
+	convertDocument,
+} = require("./documents");
 
 // ---------------------------------------------------------------------------
 // Format registries
@@ -129,6 +136,8 @@ function inputKindOf(filename) {
 	const archiveExt = archiveExtension(filename);
 	if (ARCHIVE_INPUT_EXTENSIONS.includes(archiveExt)) return { kind: "archive", ext: archiveExt };
 
+	if (DOC_INPUT_EXTENSIONS.includes(ext)) return { kind: "document", ext };
+
 	return { kind: "unsupported", ext };
 }
 
@@ -211,6 +220,13 @@ function targetsFor(filename) {
 	if (kind === "archive") {
 		return { kind, targets: ARCHIVE_ORDER.filter((t) => t !== normalizeArchive(ext)) };
 	}
+	if (kind === "document") {
+		// PDF is read-only — text extraction only.
+		if (normalizeDoc(ext) === "pdf") {
+			return { kind, targets: ["txt"] };
+		}
+		return { kind, targets: DOC_ORDER.filter((t) => t !== normalizeDoc(ext)) };
+	}
 	return { kind: "unsupported", targets: [] };
 }
 
@@ -235,6 +251,17 @@ async function convert({ inputPath, filename, format, onProgress = () => {} }) {
 			ext: producedExt,
 			downloadName: `${base}.${producedExt}`,
 		};
+	}
+
+	if (kind === "document") {
+		const spec = DOC_TARGETS[target];
+		if (!spec) {
+			throw new ConversionError(`Unsupported target format: ${target || "(none)"}`);
+		}
+		const outputPath = `${inputPath}.out.bin`;
+		await convertDocument({ inputPath, inputExt, target, outputPath, onProgress });
+		const base = filename.replace(/\.[^.]+$/, "") || "document";
+		return { outputPath, mime: spec.mime, ext: spec.ext, downloadName: `${base}.${spec.ext}` };
 	}
 
 	const registry =

@@ -11,6 +11,9 @@
 npm-debug.log
 yarn-error.log
 
+# Puppeteer's downloaded Chromium (fetched fresh at install time)
+/.cache
+
 # IDEs and editors
 .idea/
 .project
