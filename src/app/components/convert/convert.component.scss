@@ -179,40 +179,26 @@
   width: 0%;
   height: 100%;
   background: var(--accent-red);
-  transition: width 0.2s linear;
+  transition:
+    width 0.2s linear,
+    transform 0.2s linear;
 
-  // Queued: a segment sliding left-to-right ("waiting").
+  // No real percentage yet (queued, or a fast conversion mid-flight):
+  // a segment that oscillates back and forth across the track.
   &.indeterminate {
-    width: 40%;
-    animation: indeterminate-slide 1.1s ease-in-out infinite;
-  }
-
-  // Processing with no server percentage (fast conversions, e.g. images):
-  // creep the fill upward so the bar still reads as progress. Deliberately
-  // slow so the handoff to a real ffmpeg percentage isn't a jump backward.
-  &.trickle {
-    animation: progress-trickle 25s linear forwards;
+    width: 38%;
+    animation: indeterminate-oscillate 1.25s ease-in-out infinite alternate;
   }
 }
 
-@keyframes indeterminate-slide {
-  0% {
-    margin-left: -40%;
+@keyframes indeterminate-oscillate {
+  from {
+    transform: translateX(0);
   }
-  100% {
-    margin-left: 100%;
-  }
-}
-
-@keyframes progress-trickle {
-  0% {
-    width: 5%;
-  }
-  20% {
-    width: 30%;
-  }
-  100% {
-    width: 85%;
+  to {
+    // 38%-wide segment travelling until its right edge meets the track's:
+    // (100 - 38) / 38 ≈ 1.63 of its own width.
+    transform: translateX(163%);
   }
 }
 

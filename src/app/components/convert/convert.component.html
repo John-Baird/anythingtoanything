@@ -83,11 +83,11 @@
       aria-valuemax="100"
       [attr.aria-valuenow]="hasProgress() ? progressPct() : null"
     >
-      <!-- Real percentage when the server reports one (ffmpeg); otherwise a
-           trickle animation so the bar still reads as "working". -->
+      <!-- Real percentage when the server reports one (ffmpeg); otherwise an
+           oscillating indeterminate bar. -->
       <div
         class="progress-fill"
-        [class.trickle]="!hasProgress()"
+        [class.indeterminate]="!hasProgress()"
         [style.width.%]="hasProgress() ? progressPct() : null"
       ></div>
     </div>
