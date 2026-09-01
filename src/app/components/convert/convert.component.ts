@@ -94,7 +94,7 @@ export class ConvertComponent implements OnDestroy {
             this.selectedFile = null;
             this.state.set('idle');
             this.errorMessage.set(
-              "That file type isn't supported yet. Try an image (JPG, PNG, WebP, GIF, TIFF, AVIF), audio (MP3, WAV, FLAC, OGG, M4A), video (MP4, MOV, WebM, MKV), a document (TXT, MD, HTML, DOCX, PDF), a spreadsheet (CSV, XLSX, XLS), or an archive (ZIP, 7Z, RAR, TAR, GZ).",
+              "That file type isn't supported yet. Try an image (JPG, PNG, WebP, GIF, TIFF, AVIF, HEIC), audio (MP3, WAV, FLAC, OGG, M4A), video (MP4, MOV, WebM, MKV), a document (TXT, MD, HTML, DOCX, PDF), a spreadsheet (CSV, XLSX, XLS), or an archive (ZIP, 7Z, RAR, TAR, GZ).",
             );
             return;
           }

@@ -18,8 +18,12 @@ targets for that group (the source format itself is never offered).
 
 | | |
 |---|---|
-| **Accepts** | JPG, JPEG, PNG, WebP, GIF, TIFF, AVIF, SVG |
+| **Accepts** | JPG, JPEG, PNG, WebP, GIF, TIFF, AVIF, HEIC, HEIF, SVG |
 | **Converts to** | PNG, JPG, WebP, AVIF, GIF, TIFF |
+
+- Animated GIFs also convert to **MP4** and **WebM** (via ffmpeg).
+- Every other image conversion uses the first frame only, so an animated GIF →
+  PNG/JPG/etc. produces a still.
 
 ### Audio
 

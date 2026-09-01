@@ -31,7 +31,7 @@ const {
 // ---------------------------------------------------------------------------
 
 // Images sharp can read.
-const IMAGE_INPUT_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif", "tiff", "tif", "avif", "svg"];
+const IMAGE_INPUT_EXTENSIONS = ["jpg", "jpeg", "png", "webp", "gif", "tiff", "tif", "avif", "heic", "heif", "svg"];
 
 // Image targets, in display order. `sharp` is the method name passed to toFormat().
 const IMAGE_TARGETS = {
@@ -86,6 +86,35 @@ const VIDEO_TARGETS = {
 		mime: "audio/mpeg",
 		ext: "mp3",
 		args: ["-vn", "-codec:a", "libmp3lame", "-q:a", "2"],
+	},
+};
+
+// An (animated) GIF can also become a video. These go through ffmpeg, not sharp.
+// GIFs have no audio and can have odd dimensions, so force even width/height.
+const GIF_VIDEO_TARGETS = {
+	mp4: {
+		mime: "video/mp4",
+		ext: "mp4",
+		args: [
+			"-an",
+			"-movflags", "+faststart",
+			"-pix_fmt", "yuv420p",
+			"-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2:flags=lanczos",
+			"-c:v", "libx264",
+			"-preset", "veryfast",
+			"-crf", "23",
+		],
+	},
+	webm: {
+		mime: "video/webm",
+		ext: "webm",
+		args: [
+			"-an",
+			"-c:v", "libvpx-vp9",
+			"-b:v", "0",
+			"-crf", "34",
+			"-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+		],
 	},
 };
 
@@ -217,7 +246,12 @@ function targetsFor(filename) {
 	const { kind, ext } = inputKindOf(filename);
 
 	if (kind === "image") {
-		return { kind, targets: IMAGE_ORDER.filter((t) => t !== normalizeImage(ext)) };
+		const targets = IMAGE_ORDER.filter((t) => t !== normalizeImage(ext));
+		// A GIF can also be turned into a video.
+		if (ext === "gif") {
+			return { kind, targets: [...targets, "mp4", "webm"] };
+		}
+		return { kind, targets };
 	}
 	if (kind === "audio") {
 		return { kind, targets: AUDIO_ORDER.filter((t) => t !== normalizeAudio(ext)) };
@@ -288,6 +322,20 @@ async function convert({ inputPath, filename, format, onProgress = () => {} }) {
 		return { outputPath, mime: spec.mime, ext: spec.ext, downloadName: `${name}.${spec.ext}` };
 	}
 
+	// A GIF converting to a video is an image input that ffmpeg handles.
+	if (kind === "image" && inputExt === "gif" && GIF_VIDEO_TARGETS[target]) {
+		const gspec = GIF_VIDEO_TARGETS[target];
+		const outputPath = `${inputPath}.out.${gspec.ext}`;
+		try {
+			await runFfmpeg(inputPath, outputPath, gspec.args, VIDEO_TIMEOUT_MS, onProgress);
+		} catch (err) {
+			await fs.rm(outputPath, { force: true }).catch(() => {});
+			throw err;
+		}
+		const base = filename.replace(/\.[^.]+$/, "") || "converted";
+		return { outputPath, mime: gspec.mime, ext: gspec.ext, downloadName: `${base}.${gspec.ext}` };
+	}
+
 	const registry =
 		kind === "image" ? IMAGE_TARGETS : kind === "audio" ? AUDIO_TARGETS : kind === "video" ? VIDEO_TARGETS : null;
 
@@ -304,6 +352,7 @@ async function convert({ inputPath, filename, format, onProgress = () => {} }) {
 		} catch {
 			throw new ConversionError("File is not a readable image");
 		}
+		// sharp reads the first frame only, so an animated GIF converts to a still.
 		await sharp(inputPath).toFormat(spec.sharp).toFile(outputPath);
 		onProgress(1);
 	} else {
