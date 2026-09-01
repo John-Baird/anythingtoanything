@@ -17,7 +17,7 @@
   }
 </div>
 
-@if (selectedFile && state() !== 'converting') {
+@if (selectedFile && (state() === 'selected')) {
   <button type="button" class="remove-file" (click)="removeFile()">✕ remove file</button>
 }
 
@@ -51,13 +51,25 @@
   </button>
 }
 
-@if (state() === 'converting') {
+@if (state() === 'queued') {
+  <p class="status-text">Waiting in queue</p>
+  <p class="queue-text">{{ queueText() }}</p>
+  <div class="progress-bar"><div class="progress-fill indeterminate"></div></div>
+}
+
+@if (state() === 'processing') {
   <p class="status-text">Converting to {{ selectedFormat() }}…</p>
+  <div class="progress-bar">
+    <div class="progress-fill" [style.width.%]="progressPct()"></div>
+  </div>
+  @if (jobKind() !== 'image') {
+    <p class="queue-text">{{ progressPct() }}%</p>
+  }
 }
 
 @if (state() === 'done') {
   <p class="status-text">✔ {{ outputName() }} is ready</p>
 
-  <button type="button" class="download-button" (click)="download()">Download ↓</button>
+  <a class="download-button" [href]="downloadUrl()" download>Download ↓</a>
   <button type="button" class="reset-button" (click)="reset()">convert another file</button>
 }

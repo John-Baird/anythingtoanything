@@ -1,7 +1,18 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnDestroy, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 
-type State = 'idle' | 'selected' | 'converting' | 'done';
+type State = 'idle' | 'selected' | 'queued' | 'processing' | 'done';
+
+interface JobStatus {
+  status: 'queued' | 'processing' | 'done' | 'error' | 'cancelled';
+  kind: string;
+  progress: number;
+  ahead: number | null;
+  position: number | null;
+  ready: boolean;
+  error: string | null;
+  downloadName: string | null;
+}
 
 @Component({
   selector: 'app-convert-component',
@@ -10,7 +21,7 @@ type State = 'idle' | 'selected' | 'converting' | 'done';
   templateUrl: './convert.component.html',
   styleUrl: './convert.component.scss',
 })
-export class ConvertComponent {
+export class ConvertComponent implements OnDestroy {
   private http = inject(HttpClient);
 
   state = signal<State>('idle');
@@ -20,9 +31,21 @@ export class ConvertComponent {
   selectedFormat = signal<string | null>(null);
   targetFormats = signal<string[]>([]);
   errorMessage = signal('');
-  outputName = signal('');
 
-  private downloadUrl: string | null = null;
+  // queue / progress feedback
+  queueAhead = signal<number | null>(null);
+  progressPct = signal(0);
+  jobKind = signal('');
+
+  outputName = signal('');
+  downloadUrl = signal('');
+
+  private jobId: string | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
+
+  ngOnDestroy() {
+    this.stopPolling();
+  }
 
   // --- drag & drop / file picker ---
 
@@ -56,13 +79,9 @@ export class ConvertComponent {
   // --- flow ---
 
   chooseFile(file: File) {
-    this.revokeDownload();
+    this.reset();
     this.selectedFile = file;
-    this.selectedFormat.set(null);
-    this.errorMessage.set('');
-    this.outputName.set('');
 
-    // Ask the server which formats this file can convert to.
     this.http
       .get<{ kind: string; targets: string[] }>('/api/formats', {
         params: { filename: file.name },
@@ -73,14 +92,14 @@ export class ConvertComponent {
 
           if (res.kind === 'unsupported' || res.targets.length === 0) {
             this.selectedFile = null;
-            this.targetFormats.set([]);
             this.state.set('idle');
             this.errorMessage.set(
-              "That file type isn't supported yet. Try an image (JPG, PNG, WebP, GIF, TIFF, AVIF) or audio (MP3, WAV, FLAC, OGG, M4A).",
+              "That file type isn't supported yet. Try an image (JPG, PNG, WebP, GIF, TIFF, AVIF), audio (MP3, WAV, FLAC, OGG, M4A), or video (MP4, MOV, WebM, MKV).",
             );
             return;
           }
 
+          this.jobKind.set(res.kind);
           this.targetFormats.set(res.targets.map((t) => t.toUpperCase()));
           this.state.set('selected');
         },
@@ -112,74 +131,124 @@ export class ConvertComponent {
     form.append('file', file, file.name);
     form.append('format', format.toLowerCase());
 
-    this.state.set('converting');
     this.errorMessage.set('');
-    console.log('[convert] sending', file.name, '->', format);
+    this.progressPct.set(0);
+    this.queueAhead.set(null);
+    this.state.set('queued');
+    console.log('[convert] uploading', file.name, '->', format);
 
-    this.http.post('/api/convert', form, { responseType: 'blob' }).subscribe({
-      next: (blob) => {
-        this.revokeDownload();
-        this.downloadUrl = URL.createObjectURL(blob);
-
-        const base = file.name.replace(/\.[^.]+$/, '') || 'converted';
-        this.outputName.set(`${base}.${format.toLowerCase()}`);
-        console.log('[convert] done', this.outputName(), blob.size, 'bytes');
-        this.state.set('done');
+    this.http.post<{ jobId: string }>('/api/convert', form).subscribe({
+      next: (res) => {
+        console.log('[convert] job', res.jobId);
+        this.jobId = res.jobId;
+        this.startPolling();
       },
       error: async (err) => {
-        let message = 'Conversion failed';
-        try {
-          const text = await (err.error as Blob).text();
-          message = JSON.parse(text).error ?? message;
-        } catch {
-          /* keep default */
-        }
-        console.error('[convert] failed', err.status, message);
-        this.errorMessage.set(message);
+        this.errorMessage.set(await readError(err));
         this.state.set('selected');
       },
     });
   }
 
-  download() {
-    if (!this.downloadUrl) {
+  private startPolling() {
+    this.stopPolling();
+    this.poll();
+    this.pollTimer = setInterval(() => this.poll(), 1000);
+  }
+
+  private stopPolling() {
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
+  }
+
+  private poll() {
+    if (!this.jobId) {
       return;
     }
 
-    const link = document.createElement('a');
-    link.href = this.downloadUrl;
-    link.download = this.outputName();
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    this.http.get<JobStatus>(`/api/jobs/${this.jobId}`).subscribe({
+      next: (job) => {
+        if (job.status === 'queued') {
+          this.queueAhead.set(job.ahead);
+          this.state.set('queued');
+        } else if (job.status === 'processing') {
+          this.progressPct.set(job.progress);
+          this.state.set('processing');
+        } else if (job.status === 'done') {
+          this.stopPolling();
+          this.progressPct.set(100);
+          this.outputName.set(job.downloadName ?? 'converted');
+          this.downloadUrl.set(`/api/jobs/${this.jobId}/download`);
+          this.state.set('done');
+        } else if (job.status === 'error') {
+          this.stopPolling();
+          this.errorMessage.set(job.error ?? 'Conversion failed');
+          this.state.set('selected');
+        } else if (job.status === 'cancelled') {
+          this.stopPolling();
+          this.errorMessage.set('Conversion was cancelled.');
+          this.state.set('selected');
+        }
+      },
+      error: (err) => {
+        console.error('[poll] failed', err);
+        this.stopPolling();
+        this.errorMessage.set('Lost contact with the server.');
+        this.state.set('selected');
+      },
+    });
+  }
+
+  queueText() {
+    const ahead = this.queueAhead();
+    if (ahead === null || ahead === 0) {
+      return "You're next — starting shortly";
+    }
+    if (ahead === 1) {
+      return '1 file ahead of you';
+    }
+    return `${ahead} files ahead of you`;
   }
 
   reset() {
-    this.revokeDownload();
+    this.stopPolling();
+    this.jobId = null;
     this.selectedFile = null;
     this.selectedFormat.set(null);
     this.targetFormats.set([]);
     this.errorMessage.set('');
+    this.queueAhead.set(null);
+    this.progressPct.set(0);
+    this.jobKind.set('');
     this.outputName.set('');
+    this.downloadUrl.set('');
     this.state.set('idle');
-  }
-
-  private revokeDownload() {
-    if (this.downloadUrl) {
-      URL.revokeObjectURL(this.downloadUrl);
-      this.downloadUrl = null;
-    }
   }
 
   formatFileSize(bytes: number) {
     if (bytes < 1024) {
       return `${bytes} B`;
     }
-
     if (bytes < 1024 * 1024) {
       return `${(bytes / 1024).toFixed(1)} KB`;
     }
-
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   }
+}
+
+async function readError(err: unknown): Promise<string> {
+  const e = err as { error?: unknown; message?: string };
+  if (e.error instanceof Blob) {
+    try {
+      return JSON.parse(await e.error.text()).error ?? 'Upload failed';
+    } catch {
+      return 'Upload failed';
+    }
+  }
+  if (e.error && typeof e.error === 'object' && 'error' in e.error) {
+    return String((e.error as { error: unknown }).error);
+  }
+  return e.message ?? 'Upload failed';
 }
