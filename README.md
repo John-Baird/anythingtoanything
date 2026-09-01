@@ -97,13 +97,21 @@ running on render
 
 # Different file types to convert
 
+multer receives uploaded files through Express.
+
 ## 1. Images
 
 `PNG`, `JPG`, `JPEG`, `WEBP`, `GIF`, `AVIF`, `HEIC`, `SVG`
 
+needed packages 
+
+sharp converts and edits images.
+
 ## 2. Documents
 
 `PDF`, `DOCX`, `DOC`, `TXT`, `HTML`, `MD`
+
+
 
 ## 3. Audio
 
