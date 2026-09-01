@@ -52,8 +52,8 @@
 }
 
 @if (state() === 'queued') {
-  <p class="status-text">Waiting in queue</p>
-  <p class="queue-text">{{ queueText() }}</p>
+  <p class="status-text">{{ queueText() }}</p>
+  <p class="queue-text">waiting for the server to free up…</p>
   <div class="progress-bar"><div class="progress-fill indeterminate"></div></div>
 }
 

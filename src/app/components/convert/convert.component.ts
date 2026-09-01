@@ -33,7 +33,7 @@ export class ConvertComponent implements OnDestroy {
   errorMessage = signal('');
 
   // queue / progress feedback
-  queueAhead = signal<number | null>(null);
+  queuePosition = signal<number | null>(null);
   progressPct = signal(0);
   jobKind = signal('');
 
@@ -133,7 +133,7 @@ export class ConvertComponent implements OnDestroy {
 
     this.errorMessage.set('');
     this.progressPct.set(0);
-    this.queueAhead.set(null);
+    this.queuePosition.set(null);
     this.state.set('queued');
     console.log('[convert] uploading', file.name, '->', format);
 
@@ -171,7 +171,7 @@ export class ConvertComponent implements OnDestroy {
     this.http.get<JobStatus>(`/api/jobs/${this.jobId}`).subscribe({
       next: (job) => {
         if (job.status === 'queued') {
-          this.queueAhead.set(job.ahead);
+          this.queuePosition.set(job.position ?? (job.ahead ?? 0) + 1);
           this.state.set('queued');
         } else if (job.status === 'processing') {
           this.progressPct.set(job.progress);
@@ -202,14 +202,11 @@ export class ConvertComponent implements OnDestroy {
   }
 
   queueText() {
-    const ahead = this.queueAhead();
-    if (ahead === null || ahead === 0) {
-      return "You're next — starting shortly";
+    const pos = this.queuePosition();
+    if (pos === null) {
+      return 'Finding your place in line…';
     }
-    if (ahead === 1) {
-      return '1 file ahead of you';
-    }
-    return `${ahead} files ahead of you`;
+    return `${ordinal(pos)} in queue`;
   }
 
   reset() {
@@ -219,7 +216,7 @@ export class ConvertComponent implements OnDestroy {
     this.selectedFormat.set(null);
     this.targetFormats.set([]);
     this.errorMessage.set('');
-    this.queueAhead.set(null);
+    this.queuePosition.set(null);
     this.progressPct.set(0);
     this.jobKind.set('');
     this.outputName.set('');
@@ -235,6 +232,23 @@ export class ConvertComponent implements OnDestroy {
       return `${(bytes / 1024).toFixed(1)} KB`;
     }
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  }
+}
+
+function ordinal(n: number): string {
+  const mod100 = n % 100;
+  if (mod100 >= 11 && mod100 <= 13) {
+    return `${n}th`;
+  }
+  switch (n % 10) {
+    case 1:
+      return `${n}st`;
+    case 2:
+      return `${n}nd`;
+    case 3:
+      return `${n}rd`;
+    default:
+      return `${n}th`;
   }
 }
 
