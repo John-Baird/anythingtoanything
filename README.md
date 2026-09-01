@@ -1,134 +1,178 @@
-# Any-to-Any File Converter
+# Anything to Anything
 
-This project is a basic single-page web app that lets a user convert a file from one type to another without needing a backend server.
+A file converter. Upload a file, pick a target format, download the result.
+Conversions run on the server, one at a time, behind a live queue.
 
-## Overview
+- **Frontend:** Angular 22 single-page app (`src/`)
+- **Backend:** Express 5 (`src/server/`) — serves the built app and the `/api` routes
+- **Deploy:** Render web service — `npm ci && npm run build`, then `npm start`
 
-The page contains a simple interface with:
+---
 
-- A file upload area
-- A dropdown list for the source file type
-- A dropdown list for the target file type
-- A Convert button
-- A download section for the converted file
+## What it converts
 
-## Example layout
+The converter detects the file's group from its extension and offers the valid
+targets for that group (the source format itself is never offered).
 
-- Title: "Any-to-Any Converter"
-- Upload box: drag and drop or choose a file
-- Source format: automatically detected or selected manually
-- Target format: choose the output file type
-- Convert button
-- Result area: shows a success message and a link/button to download the new file
+### Images
 
-## How it works
+| | |
+|---|---|
+| **Accepts** | JPG, JPEG, PNG, WebP, GIF, TIFF, AVIF, SVG |
+| **Converts to** | PNG, JPG, WebP, AVIF, GIF, TIFF |
 
-1. The user uploads a file.
-2. The app reads the file and detects or accepts its original format.
-3. The user selects the desired output format.
-4. The app converts the file using a browser-side library or an API call.
-5. The converted file is displayed and can be downloaded.
+### Audio
 
-## Basic features
+| | |
+|---|---|
+| **Accepts** | MP3, WAV, FLAC, OGG, OPUS, M4A, AAC, WMA, AIFF |
+| **Converts to** | MP3, WAV, FLAC, OGG, Opus, M4A |
 
-- Single-page design
-- Easy drag-and-drop upload
-- Support for common file types such as PDF, DOCX, TXT, CSV, JSON, JPG, PNG, MP3, MP4, and ZIP
-- Output download after conversion
-- Simple status messages like "Processing..." or "Conversion complete"
+### Video
 
-## Example HTML structure
+| | |
+|---|---|
+| **Accepts** | MP4, MOV, WebM, MKV, AVI, M4V, FLV, WMV |
+| **Converts to** | MP4, WebM, MOV, GIF, MP3 (extract the audio track) |
 
-```html
-<!DOCTYPE html>
-<html>
-  <head>
-    <title>Any-to-Any Converter</title>
-  </head>
-  <body>
-    <h1>Any-to-Any Converter</h1>
+### Documents
 
-    <input type="file" id="fileInput" />
+| | |
+|---|---|
+| **Accepts** | TXT, MD, HTML, DOCX, PDF |
+| **Converts to** | TXT, MD, HTML, DOCX, PDF |
 
-    <select id="fromType">
-      <option value="pdf">PDF</option>
-      <option value="txt">TXT</option>
-      <option value="csv">CSV</option>
-      <option value="png">PNG</option>
-    </select>
+- **PDF is read-only** — it only converts to TXT (text extraction; layout is not preserved).
+- **DOC** (legacy binary Word) is not supported — that needs LibreOffice.
+- DOCX → PDF goes through HTML, so complex Word formatting is simplified.
 
-    <select id="toType">
-      <option value="docx">DOCX</option>
-      <option value="json">JSON</option>
-      <option value="txt">TXT</option>
-      <option value="jpg">JPG</option>
-    </select>
+### Spreadsheets
 
-    <button>Convert</button>
+| | |
+|---|---|
+| **Accepts** | CSV, TSV, XLSX, XLS |
+| **Converts to** | CSV, TSV, XLSX, XLS |
 
-    <div id="status">Waiting for file...</div>
-    <a id="downloadLink" style="display:none">Download converted file</a>
-  </body>
-</html>
+- CSV/TSV hold one sheet. A multi-sheet workbook flattens to its first sheet,
+  and the download is named `<file> (<SheetName>).csv`.
+- `→ CSV/TSV` drops formulas, formatting, extra sheets, and charts.
+
+### Archives
+
+| | |
+|---|---|
+| **Accepts** | ZIP, 7Z, RAR, TAR, GZ, TGZ / TAR.GZ |
+| **Converts to** | ZIP, 7Z, TAR, TAR.GZ, GZ |
+
+- Conversion = extract the file tree and repack it in the new format.
+- **RAR is extract-only** — creating RAR needs a licence from RARLAB.
+- `GZ` of a multi-file archive falls back to `TAR.GZ` (gzip is a single stream).
+- Extraction is capped: ≤ 500 MB uncompressed, ≤ 5,000 files; path-traversal
+  entries, symlinks, and password-protected archives are rejected.
+
+### Not yet supported
+
+- **DOC**, and high-fidelity DOCX ↔ PDF/ODT/RTF — needs LibreOffice (Docker).
+- **Presentations** (PPTX, PPT).
+- **PDF → editable formats** (DOCX/HTML with layout).
+
+---
+
+## Libraries
+
+### Conversion engines
+
+| Package | What it does |
+|---|---|
+| [`sharp`](https://sharp.pixelplumbing.com/) | Image decode / encode / resize (libvips). Handles every image conversion. |
+| [`ffmpeg-static`](https://github.com/eugeneware/ffmpeg-static) | Bundled `ffmpeg` binary. Drives all audio and video transcoding, plus video → GIF and audio extraction. |
+| [`marked`](https://marked.js.org/) | Markdown → HTML. |
+| [`turndown`](https://github.com/mixmark-io/turndown) | HTML → Markdown. |
+| [`mammoth`](https://github.com/mwilliamson/mammoth.js) | DOCX → HTML (extracts content; drops complex styling). |
+| [`html-to-docx`](https://github.com/privateOmega/html-to-docx) | HTML → DOCX. |
+| [`html-to-text`](https://github.com/html-to-text/node-html-to-text) | HTML → plain text. |
+| [`pdf-parse`](https://github.com/mehmet-kozan/pdf-parse) | Extracts text from a PDF. |
+| [`puppeteer`](https://pptr.dev/) | Headless Chrome. Renders HTML → PDF (all external requests are blocked during render). |
+| [`xlsx`](https://sheetjs.com/) (SheetJS) | Reads and writes CSV, TSV, XLSX, and legacy XLS. |
+| [`7zip-bin`](https://github.com/develar/7zip-bin) | Bundled `7za` binary. Extracts and creates ZIP, 7Z, TAR, and GZIP. |
+| [`node-unrar-js`](https://github.com/YuJianrong/node-unrar-js) | WASM build of unrar. Extracts RAR archives. |
+
+HTML is the pivot format for documents: every document conversion goes
+`source → HTML → target`.
+
+### Server
+
+| Package | What it does |
+|---|---|
+| [`express`](https://expressjs.com/) | HTTP server and routing; also serves the built Angular app. |
+| [`multer`](https://github.com/expressjs/multer) | Parses `multipart/form-data` uploads and streams them to a temp file. |
+| [`cors`](https://github.com/expressjs/cors) | Cross-origin response headers for the `/api` routes. |
+
+### Frontend
+
+| Package | What it does |
+|---|---|
+| [`@angular/core`](https://angular.dev/), `@angular/common`, `@angular/platform-browser`, `@angular/forms` | The Angular framework and runtime. |
+| `@angular/material`, `@angular/cdk` | UI components (used for layout accents like the divider). |
+| `@angular/cli`, `@angular/build` *(dev)* | Build toolchain (`ng build`). |
+
+---
+
+## How a conversion flows
+
+1. **Upload** — `POST /api/convert` with the file and target format. Multer
+   streams the upload to a temp file; the server creates a job, adds it to the
+   queue, and immediately returns `{ jobId }`.
+2. **Queue** — one conversion runs at a time (strict FIFO; override with
+   `CONVERT_CONCURRENCY`). Everyone else waits.
+3. **Poll** — the client calls `GET /api/jobs/:id` about once a second. It shows
+   the queue position (`1st in queue`, `2nd in queue`, …) then a progress bar
+   while converting. Polling also acts as a heartbeat: a queued job whose client
+   stops polling for 30 s is dropped so the line moves up.
+4. **Download** — `GET /api/jobs/:id/download` streams the converted file.
+   Finished jobs and their temp files are cleaned up after 10 minutes.
+
+The queue is in-memory, so the server must run as a **single process**. Scaling
+to multiple instances would need a shared queue (e.g. Redis / BullMQ).
+
+### API
+
+| Route | Purpose |
+|---|---|
+| `GET /api/formats?filename=<name>` | Returns `{ kind, targets }` for a filename. |
+| `POST /api/convert` | Accepts `file` + `format`, returns `{ jobId }` (202). |
+| `GET /api/jobs/:id` | Job status: `queued` / `processing` / `done` / `error` / `cancelled`, plus position and progress. |
+| `GET /api/jobs/:id/download` | Streams the converted file. |
+
+---
+
+## Running locally
+
+```bash
+npm install
+npm run build      # compile the Angular app into dist/
+npm start          # start the Express server on http://localhost:3000
 ```
 
-## Notes
+For frontend work with live reload, run the Angular dev server separately:
 
-For real conversion support, the app may need:
+```bash
+npm run dev        # ng serve on http://localhost:4200
+```
 
-- JavaScript libraries for each file type
-- A server-side API for unsupported conversions
-- File validation and error handling
+### Environment variables
 
-A very simple version can support a small set of file conversions only, while a more advanced version can connect to external conversion services.
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `3000` | Server port (Render sets this). |
+| `CONVERT_CONCURRENCY` | `1` | How many conversions run at once. |
+| `MAX_UPLOAD_MB` | `200` | Upload size limit. |
 
-This page is best for a lightweight demo, educational project, or simple internal tool.
+### Deploy notes
 
-
-# THE STACK
-
-Html
-Scss
-express
-
-running on render
-
-
-
-# Different file types to convert
-
-multer receives uploaded files through Express.
-
-## 1. Images
-
-`PNG`, `JPG`, `JPEG`, `WEBP`, `GIF`, `AVIF`, `HEIC`, `SVG`
-
-needed packages 
-
-sharp converts and edits images.
-
-## 2. Documents
-
-`PDF`, `DOCX`, `DOC`, `TXT`, `HTML`, `MD`
-
-
-
-## 3. Audio
-
-`MP3`, `WAV`, `M4A`, `AAC`, `OGG`, `AIFF`
-
-## 4. Video
-
-`MP4`, `MOV`, `WEBM`, `AVI`, `MKV`, `M4V`
-
-## 5. Spreadsheets
-
-`CSV`, `XLSX`, `XLS`
-
-## 6. Presentations
-
-`PPTX`, `PPT`, `PDF`
-
-## 7. Archives
-
-`ZIP`, `7Z`, `RAR`, `TAR`, `GZ`
+- **Node ≥ 24.15.0** (pinned in `.node-version`) — Angular CLI 22's minimum.
+- `sharp`, `ffmpeg-static`, `7zip-bin`, and `node-unrar-js` all ship platform
+  binaries via npm, so `npm ci` on Render's Linux builder gets the right ones.
+- `puppeteer` downloads Chromium on install (kept in `./.cache` via
+  `.puppeteerrc.cjs`). On Render's native runtime it may still need extra shared
+  libraries; if `→ PDF` fails there, use a Dockerfile or `@sparticuz/chromium`.
