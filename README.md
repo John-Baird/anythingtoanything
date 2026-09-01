@@ -87,7 +87,7 @@ This page is best for a lightweight demo, educational project, or simple interna
 
 # THE STACK
 
-Angular
+Html
 Scss
 express
 
