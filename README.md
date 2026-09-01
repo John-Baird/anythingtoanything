@@ -83,3 +83,12 @@ For real conversion support, the app may need:
 A very simple version can support a small set of file conversions only, while a more advanced version can connect to external conversion services.
 
 This page is best for a lightweight demo, educational project, or simple internal tool.
+
+
+# THE STACK
+
+Angular
+Scss
+express
+
+running on render
