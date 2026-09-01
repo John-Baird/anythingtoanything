@@ -1,12 +1,12 @@
 import { Component } from '@angular/core';
 
 @Component({
-  selector: 'app-home',
+  selector: 'app-convert-page',
   standalone: true,
-  templateUrl: './home.html',
-  styleUrl: './home.scss',
+  templateUrl: './convert.page.html',
+  styleUrl: './convert.page.scss',
 })
-export class Home {
+export class ConvertPage {
   title = 'Anything To Anything';
 
   description = 'Convert anything into anything.';
