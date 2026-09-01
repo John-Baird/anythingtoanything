@@ -1,4 +1,4 @@
 import { bootstrapApplication } from '@angular/platform-browser';
-import { Home } from './app/pages/home/home';
+import { ConvertPage } from './app/pages/convert/convert.page';
 
-bootstrapApplication(Home).catch((err) => console.error(err));
+bootstrapApplication(ConvertPage).catch((err) => console.error(err));
