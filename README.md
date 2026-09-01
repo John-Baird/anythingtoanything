@@ -92,3 +92,35 @@ Scss
 express
 
 running on render
+
+
+
+# Different file types to convert
+
+## 1. Images
+
+`PNG`, `JPG`, `JPEG`, `WEBP`, `GIF`, `AVIF`, `HEIC`, `SVG`
+
+## 2. Documents
+
+`PDF`, `DOCX`, `DOC`, `TXT`, `HTML`, `MD`
+
+## 3. Audio
+
+`MP3`, `WAV`, `M4A`, `AAC`, `OGG`, `AIFF`
+
+## 4. Video
+
+`MP4`, `MOV`, `WEBM`, `AVI`, `MKV`, `M4V`
+
+## 5. Spreadsheets
+
+`CSV`, `XLSX`, `XLS`
+
+## 6. Presentations
+
+`PPTX`, `PPT`, `PDF`
+
+## 7. Archives
+
+`ZIP`, `7Z`, `RAR`, `TAR`, `GZ`
