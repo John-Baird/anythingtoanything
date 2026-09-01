@@ -81,13 +81,19 @@
       role="progressbar"
       aria-valuemin="0"
       aria-valuemax="100"
-      [attr.aria-valuenow]="progressPct()"
+      [attr.aria-valuenow]="hasProgress() ? progressPct() : null"
     >
-      <div class="progress-fill" [style.width.%]="progressPct()"></div>
+      <!-- Real percentage when the server reports one (ffmpeg); otherwise a
+           trickle animation so the bar still reads as "working". -->
+      <div
+        class="progress-fill"
+        [class.trickle]="!hasProgress()"
+        [style.width.%]="hasProgress() ? progressPct() : null"
+      ></div>
     </div>
 
     <div class="progress-label">
-      {{ jobKind() === 'image' ? 'almost there…' : progressPct() + '%' }}
+      {{ hasProgress() ? progressPct() + '%' : 'working…' }}
     </div>
   }
 

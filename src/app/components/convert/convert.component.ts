@@ -35,6 +35,7 @@ export class ConvertComponent implements OnDestroy {
   // queue / progress feedback
   queuePosition = signal<number | null>(null);
   progressPct = signal(0);
+  hasProgress = signal(false); // true once the server reports a real percentage
   jobKind = signal('');
 
   outputName = signal('');
@@ -133,6 +134,7 @@ export class ConvertComponent implements OnDestroy {
 
     this.errorMessage.set('');
     this.progressPct.set(0);
+    this.hasProgress.set(false);
     this.queuePosition.set(null);
     this.state.set('queued');
     console.log('[convert] uploading', file.name, '->', format);
@@ -175,6 +177,9 @@ export class ConvertComponent implements OnDestroy {
           this.state.set('queued');
         } else if (job.status === 'processing') {
           this.progressPct.set(job.progress);
+          if (job.progress > 0) {
+            this.hasProgress.set(true);
+          }
           this.state.set('processing');
         } else if (job.status === 'done') {
           this.stopPolling();
@@ -218,6 +223,7 @@ export class ConvertComponent implements OnDestroy {
     this.errorMessage.set('');
     this.queuePosition.set(null);
     this.progressPct.set(0);
+    this.hasProgress.set(false);
     this.jobKind.set('');
     this.outputName.set('');
     this.downloadUrl.set('');
