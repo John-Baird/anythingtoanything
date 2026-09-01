@@ -64,12 +64,20 @@ export class ConvertComponent {
     form.append('file', this.selectedFile, this.selectedFile.name);
 
     this.status = 'uploading';
+    console.log('[upload] sending', {
+      name: this.selectedFile.name,
+      size: this.selectedFile.size,
+      type: this.selectedFile.type,
+    });
+
     this.http.post('/api/upload', form).subscribe({
       next: (res) => {
+        console.log('[upload] server response', res);
         this.result = res;
         this.status = 'done';
       },
       error: (err) => {
+        console.error('[upload] failed', err.status, err.error ?? err.message);
         this.result = err.error ?? err.message;
         this.status = 'error';
       },
