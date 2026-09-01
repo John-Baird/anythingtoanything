@@ -16,3 +16,17 @@
     <span>{{ formatFileSize(selectedFile.size) }}</span>
   }
 </div>
+
+@if (selectedFile) {
+  <button type="button" (click)="upload()" [disabled]="status === 'uploading'">
+    {{ status === 'uploading' ? 'Uploading…' : 'Upload' }}
+  </button>
+}
+
+@if (status === 'done') {
+  <pre>{{ result | json }}</pre>
+}
+
+@if (status === 'error') {
+  <pre class="error">{{ result | json }}</pre>
+}
