@@ -1,0 +1,74 @@
+@use '@angular/material' as mat;
+
+:host {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100svh;
+  background-color: var(--page-background);
+  background-image:
+    linear-gradient(to right, var(--border) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+  background-size: 50px 50px;
+  position: relative;
+  z-index: -2;
+  overflow: hidden;
+
+  &::after {
+    content: '';
+    display: block;
+    position: absolute;
+    background-color: var(--accent-red);
+    top: 50%;
+    left: 65%;
+    width: 100%;
+    height: 500%;
+    z-index: -1;
+    transform: translateY(-50%) rotate(15deg);
+    transform-origin: center;
+  }
+}
+
+section {
+  display: flex;
+  flex-direction: column; // Media query to change this
+  gap: 50px;
+  width: 100%;
+  max-width: 400px;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    gap: 25px;
+
+    h2 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent-red);
+      letter-spacing: 5px;
+    }
+
+    h1 {
+      font-size: 40px;
+      font-weight: 750;
+    }
+
+    mat-divider {
+      width: 100px;
+      @include mat.divider-overrides(
+        (
+          width: 5px,
+          color: var(--accent-red),
+        )
+      );
+    }
+
+    p {
+      font-size: 14px;
+      font-weight: 300;
+      color: var(--grey);
+    }
+  }
+}
