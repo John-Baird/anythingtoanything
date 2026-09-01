@@ -6,14 +6,4 @@ import { Component } from '@angular/core';
   templateUrl: './convert.page.html',
   styleUrl: './convert.page.scss',
 })
-export class ConvertPage {
-  title = 'Anything To Anything';
-
-  description = 'Convert anything into anything.';
-
-  count = 0;
-
-  increment() {
-    this.count++;
-  }
-}
+export class ConvertPage {}

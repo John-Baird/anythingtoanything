@@ -1,33 +1,36 @@
 {
-	"name": "anythingtoanything",
-	"version": "1.0.0",
-	"description": "This project is a basic single-page web app that lets a user convert a file from one type to another without needing a backend server.",
-	"main": "index.js",
-	"scripts": {
-		"start": "ng serve",
-		"server": "node src/server/server.js"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/John-Baird/anythingtoanything.git"
-	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC",
-	"type": "commonjs",
-	"bugs": {
-		"url": "https://github.com/John-Baird/anythingtoanything/issues"
-	},
-	"homepage": "https://github.com/John-Baird/anythingtoanything#readme",
-	"dependencies": {
-		"@angular/cli": "^22.1.6",
-		"@angular/common": "^22.1.4",
-		"@angular/core": "^22.1.4",
-		"@angular/platform-browser": "^22.1.4",
-		"cors": "^2.8.6",
-		"express": "^5.2.1"
-	},
-	"devDependencies": {
-		"@angular/build": "^22.1.6"
-	}
+  "name": "anythingtoanything",
+  "version": "1.0.0",
+  "description": "This project is a basic single-page web app that lets a user convert a file from one type to another without needing a backend server.",
+  "main": "index.js",
+  "scripts": {
+    "start": "ng serve",
+    "server": "node src/server/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/John-Baird/anythingtoanything.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/John-Baird/anythingtoanything/issues"
+  },
+  "homepage": "https://github.com/John-Baird/anythingtoanything#readme",
+  "dependencies": {
+    "@angular/cdk": "^22.1.4",
+    "@angular/cli": "^22.1.6",
+    "@angular/common": "^22.1.4",
+    "@angular/core": "^22.1.4",
+    "@angular/forms": "^22.1.4",
+    "@angular/material": "^22.1.4",
+    "@angular/platform-browser": "^22.1.4",
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
+  },
+  "devDependencies": {
+    "@angular/build": "^22.1.6"
+  }
 }
