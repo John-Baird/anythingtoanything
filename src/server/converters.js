@@ -19,6 +19,12 @@ const {
 	normalizeDoc,
 	convertDocument,
 } = require("./documents");
+const {
+	SPREADSHEET_INPUT_EXTENSIONS,
+	SPREADSHEET_TARGETS,
+	SPREADSHEET_ORDER,
+	convertSpreadsheet,
+} = require("./spreadsheets");
 
 // ---------------------------------------------------------------------------
 // Format registries
@@ -136,6 +142,8 @@ function inputKindOf(filename) {
 	const archiveExt = archiveExtension(filename);
 	if (ARCHIVE_INPUT_EXTENSIONS.includes(archiveExt)) return { kind: "archive", ext: archiveExt };
 
+	if (SPREADSHEET_INPUT_EXTENSIONS.includes(ext)) return { kind: "spreadsheet", ext };
+
 	if (DOC_INPUT_EXTENSIONS.includes(ext)) return { kind: "document", ext };
 
 	return { kind: "unsupported", ext };
@@ -227,6 +235,9 @@ function targetsFor(filename) {
 		}
 		return { kind, targets: DOC_ORDER.filter((t) => t !== normalizeDoc(ext)) };
 	}
+	if (kind === "spreadsheet") {
+		return { kind, targets: SPREADSHEET_ORDER.filter((t) => t !== ext) };
+	}
 	return { kind: "unsupported", targets: [] };
 }
 
@@ -262,6 +273,19 @@ async function convert({ inputPath, filename, format, onProgress = () => {} }) {
 		await convertDocument({ inputPath, inputExt, target, outputPath, onProgress });
 		const base = filename.replace(/\.[^.]+$/, "") || "document";
 		return { outputPath, mime: spec.mime, ext: spec.ext, downloadName: `${base}.${spec.ext}` };
+	}
+
+	if (kind === "spreadsheet") {
+		const spec = SPREADSHEET_TARGETS[target];
+		if (!spec) {
+			throw new ConversionError(`Unsupported target format: ${target || "(none)"}`);
+		}
+		const outputPath = `${inputPath}.out.bin`;
+		const meta = await convertSpreadsheet({ inputPath, inputExt, target, outputPath, onProgress });
+		const base = filename.replace(/\.[^.]+$/, "") || "spreadsheet";
+		// When a multi-sheet workbook flattens to one CSV, name it after the sheet used.
+		const name = meta.multiSheetDropped ? `${base} (${meta.firstSheetName})` : base;
+		return { outputPath, mime: spec.mime, ext: spec.ext, downloadName: `${name}.${spec.ext}` };
 	}
 
 	const registry =

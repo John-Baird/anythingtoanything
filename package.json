@@ -45,7 +45,8 @@
     "pdf-parse": "^2.4.5",
     "puppeteer": "^25.8.0",
     "sharp": "^0.35.3",
-    "turndown": "^7.2.4"
+    "turndown": "^7.2.4",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@angular/build": "^22.1.6"
