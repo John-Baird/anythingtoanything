@@ -1,75 +1,102 @@
-<div
-  class="drop-zone"
-  [class.dragging]="isDragging()"
-  (dragover)="onDragOver($event)"
-  (dragleave)="onDragLeave($event)"
-  (drop)="onDrop($event)"
-  (click)="fileInput.click()"
->
+<div class="card-content">
+  <h2 class="card-heading">Convert a file</h2>
+
   <input #fileInput type="file" hidden (change)="onFileSelected($event)" />
 
-  @if (!selectedFile) {
-    <p>Drop a file here</p>
-    <span>or click to browse</span>
-  } @else {
-    <p class="file-name">{{ selectedFile.name }}</p>
-    <span>{{ formatFileSize(selectedFile.size) }}</span>
+  <!-- STATE 1: before a file is selected. -->
+  @if (state() === 'idle') {
+    <button
+      type="button"
+      class="upload-button"
+      [class.dragging]="isDragging()"
+      (click)="fileInput.click()"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave($event)"
+      (drop)="onDrop($event)"
+    >
+      <div class="upload-title">Drop a file here</div>
+      <div class="upload-subtitle">or click to browse</div>
+    </button>
+
+    @if (errorMessage()) {
+      <p class="error">{{ errorMessage() }}</p>
+    }
+  }
+
+  <!-- STATE 2: after a file is selected. -->
+  @if (state() === 'selected') {
+    <div class="selected-file">
+      <span class="file-name">{{ selectedFile?.name }}</span>
+      <button type="button" class="remove-file" aria-label="Remove file" (click)="removeFile()">
+        ✕
+      </button>
+    </div>
+
+    @if (errorMessage()) {
+      <p class="error">{{ errorMessage() }}</p>
+    }
+
+    <div class="format-label">convert to</div>
+
+    <div class="format-buttons" role="radiogroup" aria-label="Choose a file format">
+      @for (format of targetFormats(); track format) {
+        <button
+          type="button"
+          class="format-button"
+          [class.selected]="selectedFormat() === format"
+          (click)="pickFormat(format)"
+        >
+          {{ format }}
+        </button>
+      }
+    </div>
+
+    <button
+      type="button"
+      class="convert-button"
+      [disabled]="!selectedFormat()"
+      (click)="convert()"
+    >
+      Convert →
+    </button>
+  }
+
+  <!-- STATE 3a: waiting in the queue. -->
+  @if (state() === 'queued') {
+    <div class="status-text">{{ queueText() }}</div>
+
+    <div class="progress-bar" role="progressbar">
+      <div class="progress-fill indeterminate"></div>
+    </div>
+
+    <div class="progress-label">waiting for the server to free up…</div>
+  }
+
+  <!-- STATE 3b: the conversion is running. -->
+  @if (state() === 'processing') {
+    <div class="status-text">Converting to {{ selectedFormat() }}…</div>
+
+    <div
+      class="progress-bar"
+      role="progressbar"
+      aria-valuemin="0"
+      aria-valuemax="100"
+      [attr.aria-valuenow]="progressPct()"
+    >
+      <div class="progress-fill" [style.width.%]="progressPct()"></div>
+    </div>
+
+    <div class="progress-label">
+      {{ jobKind() === 'image' ? 'almost there…' : progressPct() + '%' }}
+    </div>
+  }
+
+  <!-- STATE 4: the conversion is finished. -->
+  @if (state() === 'done') {
+    <div class="status-text">✔ {{ outputName() }} is ready</div>
+
+    <a class="download-button" [href]="downloadUrl()" download>Download ↓</a>
+
+    <button type="button" class="reset-button" (click)="reset()">convert another file</button>
   }
 </div>
-
-@if (selectedFile && (state() === 'selected')) {
-  <button type="button" class="remove-file" (click)="removeFile()">✕ remove file</button>
-}
-
-@if (errorMessage()) {
-  <p class="error">{{ errorMessage() }}</p>
-}
-
-@if (state() === 'selected') {
-  <div class="format-label">convert to</div>
-
-  <div class="format-buttons" role="radiogroup" aria-label="Choose a target format">
-    @for (format of targetFormats(); track format) {
-      <button
-        type="button"
-        class="format-button"
-        [class.selected]="selectedFormat() === format"
-        (click)="pickFormat(format)"
-      >
-        {{ format }}
-      </button>
-    }
-  </div>
-
-  <button
-    type="button"
-    class="convert-button"
-    [disabled]="!selectedFormat()"
-    (click)="convert()"
-  >
-    Convert →
-  </button>
-}
-
-@if (state() === 'queued') {
-  <p class="status-text">{{ queueText() }}</p>
-  <p class="queue-text">waiting for the server to free up…</p>
-  <div class="progress-bar"><div class="progress-fill indeterminate"></div></div>
-}
-
-@if (state() === 'processing') {
-  <p class="status-text">Converting to {{ selectedFormat() }}…</p>
-  <div class="progress-bar">
-    <div class="progress-fill" [style.width.%]="progressPct()"></div>
-  </div>
-  @if (jobKind() !== 'image') {
-    <p class="queue-text">{{ progressPct() }}%</p>
-  }
-}
-
-@if (state() === 'done') {
-  <p class="status-text">✔ {{ outputName() }} is ready</p>
-
-  <a class="download-button" [href]="downloadUrl()" download>Download ↓</a>
-  <button type="button" class="reset-button" (click)="reset()">convert another file</button>
-}

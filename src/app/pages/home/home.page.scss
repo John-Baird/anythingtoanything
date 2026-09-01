@@ -1,90 +1,100 @@
-@use '@angular/material' as mat;
-
+// The full page, including the left text and right converter card.
 :host {
-  padding: 30px;
+  position: relative;
   display: flex;
+  min-height: 100vh;
+  width: 100%;
   align-items: center;
   justify-content: center;
-  height: 100svh;
-  background-color: var(--page-background);
-  background-image:
-    linear-gradient(to right, var(--border) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--border) 1px, transparent 1px);
-  background-size: 50px 50px;
-  position: relative;
   overflow: hidden;
+  background-color: var(--page-background);
 
-  &::after {
-    content: '';
-    display: block;
-    position: absolute;
-    background-color: var(--accent-red);
-    top: 50%;
-    left: 65%;
-    width: 100%;
-    height: 500%;
-    z-index: 1;
-    transform: translateY(-50%) rotate(15deg);
-    transform-origin: center;
-    pointer-events: none;
-  }
+  // The faint square grid in the background.
+  background-image:
+    linear-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.045) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 
-section {
+// Decorative red shape on the right side of the page.
+.red-shape {
+  position: absolute;
+  top: -25%;
+  right: -30%;
+  z-index: 0;
+  width: 75%;
+  height: 170%;
+  background: var(--accent-red);
+  opacity: 0.95;
+  transform: rotate(18deg);
+}
+
+// Decorative black strip next to the red shape.
+.black-shape {
+  position: absolute;
+  top: -25%;
+  right: -42%;
+  z-index: 0;
+  width: 26%;
+  height: 170%;
+  background: var(--dark);
+  transform: rotate(18deg);
+}
+
+// The row containing the left text and the right card.
+.content {
+  position: relative;
   z-index: 2;
+  width: min(1100px, 92vw);
   display: flex;
-  flex-direction: row;
-  align-items: start;
-  justify-content: start;
-  gap: 50px;
-  width: max-content;
-
-  div {
-    display: flex;
-    flex-direction: column;
-    align-items: start;
-    justify-content: start;
-    gap: 25px;
-    max-width: 400px;
-    width: 100%;
-
-    h2 {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--accent-red);
-      letter-spacing: 5px;
-    }
-
-    h1 {
-      font-size: 40px;
-      font-weight: 750;
-    }
-
-    mat-divider {
-      width: 100px;
-      @include mat.divider-overrides(
-        (
-          width: 5px,
-          color: var(--accent-red),
-        )
-      );
-    }
-
-    p {
-      font-size: 14px;
-      font-weight: 300;
-      color: var(--grey);
-    }
-  }
-
-  app-convert-component {
-    max-width: 600px;
-    width: 100%;
-  }
+  align-items: center;
+  justify-content: space-between;
+  gap: 60px;
+  flex-wrap: wrap;
+  padding: 40px 0;
 }
 
-@media (max-width: 768px) {
-  section {
-    flex-direction: column;
+// Left side: introduction.
+.intro {
+  flex: 1;
+  min-width: 280px;
+}
+
+.eyebrow {
+  margin-bottom: 18px;
+  color: var(--accent-red);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 4px;
+}
+
+.main-title {
+  margin: 0;
+  color: var(--dark);
+  font-size: clamp(48px, 8vw, 104px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -2px;
+}
+
+.red-line {
+  width: 120px;
+  height: 6px;
+  margin-top: 26px;
+  background: var(--accent-red);
+}
+
+.description {
+  max-width: 360px;
+  margin-top: 22px;
+  color: rgba(0, 0, 0, 0.55);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+// On a smaller screen, stack the left and right sides neatly.
+@media (max-width: 700px) {
+  .content {
+    gap: 36px;
   }
 }
