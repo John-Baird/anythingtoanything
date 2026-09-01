@@ -1,0 +1,24 @@
+{
+	"name": "anythingtoanything",
+	"version": "1.0.0",
+	"description": "This project is a basic single-page web app that lets a user convert a file from one type to another without needing a backend server.",
+	"main": "index.js",
+	"scripts": {
+		"start": "node server/index.js"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/John-Baird/anythingtoanything.git"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"type": "commonjs",
+	"bugs": {
+		"url": "https://github.com/John-Baird/anythingtoanything/issues"
+	},
+	"homepage": "https://github.com/John-Baird/anythingtoanything#readme",
+	"dependencies": {
+		"express": "^5.2.1"
+	}
+}
