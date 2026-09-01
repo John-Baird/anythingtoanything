@@ -3,6 +3,15 @@ const fs = require("fs/promises");
 const { spawn } = require("child_process");
 const sharp = require("sharp");
 const ffmpegPath = require("ffmpeg-static");
+const {
+	ARCHIVE_INPUT_EXTENSIONS,
+	ARCHIVE_TARGETS,
+	ARCHIVE_ORDER,
+	archiveExtension,
+	stripArchiveExtension,
+	normalizeArchive,
+	convertArchive,
+} = require("./archives");
 
 // ---------------------------------------------------------------------------
 // Format registries
@@ -109,11 +118,18 @@ class ConversionError extends Error {
 	}
 }
 
-function inputKind(ext) {
-	if (IMAGE_INPUT_EXTENSIONS.includes(ext)) return "image";
-	if (AUDIO_INPUT_EXTENSIONS.includes(ext)) return "audio";
-	if (VIDEO_INPUT_EXTENSIONS.includes(ext)) return "video";
-	return "unsupported";
+// Returns { kind, ext } — ext is the extension that matched (the archive
+// extension may be a double one like "tar.gz").
+function inputKindOf(filename) {
+	const ext = fileExtension(filename);
+	if (IMAGE_INPUT_EXTENSIONS.includes(ext)) return { kind: "image", ext };
+	if (AUDIO_INPUT_EXTENSIONS.includes(ext)) return { kind: "audio", ext };
+	if (VIDEO_INPUT_EXTENSIONS.includes(ext)) return { kind: "video", ext };
+
+	const archiveExt = archiveExtension(filename);
+	if (ARCHIVE_INPUT_EXTENSIONS.includes(archiveExt)) return { kind: "archive", ext: archiveExt };
+
+	return { kind: "unsupported", ext };
 }
 
 // Parse an ffmpeg timestamp like "00:01:23.45" into seconds.
@@ -181,8 +197,7 @@ function runFfmpeg(inputPath, outputPath, args, timeoutMs, onProgress) {
 
 // Which target formats can this filename convert to?
 function targetsFor(filename) {
-	const ext = fileExtension(filename);
-	const kind = inputKind(ext);
+	const { kind, ext } = inputKindOf(filename);
 
 	if (kind === "image") {
 		return { kind, targets: IMAGE_ORDER.filter((t) => t !== normalizeImage(ext)) };
@@ -193,6 +208,9 @@ function targetsFor(filename) {
 	if (kind === "video") {
 		return { kind, targets: VIDEO_ORDER.filter((t) => t !== normalizeVideo(ext)) };
 	}
+	if (kind === "archive") {
+		return { kind, targets: ARCHIVE_ORDER.filter((t) => t !== normalizeArchive(ext)) };
+	}
 	return { kind: "unsupported", targets: [] };
 }
 
@@ -200,7 +218,24 @@ function targetsFor(filename) {
 // returns { outputPath, mime, ext, downloadName }.
 async function convert({ inputPath, filename, format, onProgress = () => {} }) {
 	const target = String(format || "").toLowerCase();
-	const kind = inputKind(fileExtension(filename));
+	const { kind, ext: inputExt } = inputKindOf(filename);
+
+	if (kind === "archive") {
+		const spec = ARCHIVE_TARGETS[target];
+		if (!spec) {
+			throw new ConversionError(`Unsupported target format: ${target || "(none)"}`);
+		}
+		const outputPath = `${inputPath}.out.bin`;
+		const { ext: producedExt } = await convertArchive({ inputPath, inputExt, target, outputPath, onProgress });
+		const base = stripArchiveExtension(filename) || "archive";
+		// `producedExt` may differ from the requested target (gz -> tar.gz fallback).
+		return {
+			outputPath,
+			mime: producedExt === "tar.gz" ? "application/gzip" : spec.mime,
+			ext: producedExt,
+			downloadName: `${base}.${producedExt}`,
+		};
+	}
 
 	const registry =
 		kind === "image" ? IMAGE_TARGETS : kind === "audio" ? AUDIO_TARGETS : kind === "video" ? VIDEO_TARGETS : null;
