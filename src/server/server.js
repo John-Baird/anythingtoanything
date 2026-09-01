@@ -1,17 +1,20 @@
 const express = require("express");
-const path = require("path");
+const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(cors());
 app.use(express.json());
 
 const publicDir = path.join(__dirname, "..") //Targeting the /src
 
 
 
-app.get("/", (req, res) => {
-	res.sendFile(path.join(publicDir, "index.html"));
+app.get("/api/test", (req, res) => {
+	res.json({
+		message: "Backend works",
+	});
 });
 
 
